@@ -170,5 +170,5 @@ globalThis.exportButton.addEventListener("click", (e) => {
 globalThis.clearButton.addEventListener("click", (e) => {
   clearTable();
   globalThis.invoiceInput.value = null;
-  globalThis.dispatchEvent(new Event("change"));
+  globalThis.invoiceInput.dispatchEvent(new Event("change"));
 });
