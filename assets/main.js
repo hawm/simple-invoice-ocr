@@ -105,11 +105,6 @@ async function parse() {
     data["order"] = i + 1;
     data["file"] = f.name;
     renderTableRowData(data);
-    // testing
-    for (let i = 0; i < 40; i++) {
-      data["order"] = i + 1;
-      renderTableRowData(data);
-    }
   }
 
   console.log("All done!");
