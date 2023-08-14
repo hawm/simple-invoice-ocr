@@ -91,11 +91,11 @@ async function parse() {
   const invoiceFiles = globalThis.invoiceInput.files;
 
   renderTableHeader([
-    ["Code", "code"],
-    ["Num", "num"],
-    ["Date", "date"],
-    ["Amount", "amount"],
-    ["File", "file"],
+    ["发票代码", "code"],
+    ["发票号码", "num"],
+    ["开盘日期", "date"],
+    ["价税合计", "amount"],
+    ["文件名", "file"],
   ]);
 
   for (let i = 0; i < invoiceFiles.length; i++) {
