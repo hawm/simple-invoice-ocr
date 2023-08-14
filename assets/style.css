@@ -13,7 +13,7 @@ td {
 
 #invoice-table-container {
   margin-top: 10px;
-  width: min-content;
+  max-width: max-content;
   max-height: 500px;
   overflow: auto;
 }
