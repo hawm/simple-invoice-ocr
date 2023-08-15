@@ -6,6 +6,7 @@
   globalThis.exportButton = document.getElementById("export-btn");
   globalThis.exportButton.disabled = true;
   globalThis.clearButton = document.getElementById("clear-btn");
+  globalThis.progressText = document.getElementById("progress-text");
   globalThis.ocrWorker = await Tesseract.createWorker({
     langPath: "./vendor/tessdata",
     //logger: (m) => console.log(m),
@@ -87,6 +88,10 @@ async function renderTableHeader(headerData) {
   globalThis.invoiceTable.appendChild(thead);
 }
 
+function updateProgressText(text) {
+  globalThis.progressText.textContent = text;
+}
+
 async function parse() {
   const invoiceFiles = globalThis.invoiceInput.files;
 
@@ -100,13 +105,16 @@ async function parse() {
 
   for (let i = 0; i < invoiceFiles.length; i++) {
     let f = invoiceFiles[i];
+    updateProgressText(
+      `正在识别第${i + 1}张发票...， 还剩下${invoiceFiles.length - (i + 1)}张`
+    );
     console.log(`Parsing ${f.name}`);
     let data = await parseInvoiceData(f);
     data["order"] = i + 1;
     data["file"] = f.name;
     renderTableRowData(data);
   }
-
+  updateProgressText(`识别完成！共识别${invoiceFiles.length}张发票`);
   console.log("All done!");
 }
 
@@ -133,6 +141,7 @@ function updateParseButtonState() {
 
 globalThis.invoiceInput.addEventListener("change", (e) => {
   updateParseButtonState();
+  updateProgressText(`已选择${e.target.files.length}张发票`);
 });
 
 globalThis.parseButton.addEventListener("click", async (e) => {
@@ -158,8 +167,10 @@ globalThis.exportButton.addEventListener("click", (e) => {
     globalThis.invoiceInput.disabled = true;
     globalThis.parseButton.disabled = true;
     globalThis.clearButton.disabled = true;
+    updateProgressText("正在导出...");
     exportInvoiceXLSX();
   } finally {
+    updateProgressText("导出完成！");
     e.target.disabled = false;
     globalThis.parseButton.disabled = false;
     globalThis.clearButton.disabled = false;
