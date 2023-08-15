@@ -1,19 +1,23 @@
-(async () => {
+async function init() {
+  globalThis.progressText = document.getElementById("progress-text");
+  updateProgressText("初始化中...");
   globalThis.invoiceInput = document.getElementById("invoice-input");
+  globalThis.invoiceInput.disabled = true;
   globalThis.invoiceTable = document.getElementById("invoice-table");
   globalThis.parseButton = document.getElementById("parse-btn");
   globalThis.parseButton.disabled = true;
   globalThis.exportButton = document.getElementById("export-btn");
   globalThis.exportButton.disabled = true;
   globalThis.clearButton = document.getElementById("clear-btn");
-  globalThis.progressText = document.getElementById("progress-text");
   globalThis.ocrWorker = await Tesseract.createWorker({
     langPath: "./vendor/tessdata",
     //logger: (m) => console.log(m),
   });
   await ocrWorker.loadLanguage("chi_sim");
   await ocrWorker.initialize("chi_sim");
-})();
+  updateProgressText("初始化完成！");
+  globalThis.invoiceInput.disabled = false;
+}
 
 async function parseInvoiceQRcodeData(canvas) {
   let ctx = canvas.getContext("2d");
@@ -158,48 +162,52 @@ function updateParseButtonState() {
   }
 }
 
-globalThis.invoiceInput.addEventListener("change", (e) => {
-  updateParseButtonState();
-  updateProgressText(`已选择${e.target.files.length}张发票`);
-});
+addEventListener("load", async (e) => {
+  await init();
 
-globalThis.parseButton.addEventListener("click", async (e) => {
-  try {
-    e.target.disabled = true;
-    e.target.textContent = "识别中...";
-    globalThis.invoiceInput.disabled = true;
-    globalThis.clearButton.disabled = true;
-    globalThis.exportButton.disabled = true;
-    await parse();
-    globalThis.exportButton.disabled = false;
-  } finally {
-    e.target.textContent = "识别";
+  globalThis.invoiceInput.addEventListener("change", (e) => {
     updateParseButtonState();
-    globalThis.clearButton.disabled = false;
-    globalThis.invoiceInput.disabled = false;
-  }
-});
+    updateProgressText(`已选择${e.target.files.length}张发票`);
+  });
 
-globalThis.exportButton.addEventListener("click", (e) => {
-  try {
-    e.target.disabled = true;
-    globalThis.invoiceInput.disabled = true;
-    globalThis.parseButton.disabled = true;
-    globalThis.clearButton.disabled = true;
-    updateProgressText("正在导出...");
-    exportInvoiceXLSX();
-  } finally {
-    updateProgressText("导出完成！");
-    e.target.disabled = false;
-    globalThis.parseButton.disabled = false;
-    globalThis.clearButton.disabled = false;
-    globalThis.invoiceInput.disabled = false;
-  }
-});
+  globalThis.parseButton.addEventListener("click", async (e) => {
+    try {
+      e.target.disabled = true;
+      e.target.textContent = "识别中...";
+      globalThis.invoiceInput.disabled = true;
+      globalThis.clearButton.disabled = true;
+      globalThis.exportButton.disabled = true;
+      await parse();
+      globalThis.exportButton.disabled = false;
+    } finally {
+      e.target.textContent = "识别";
+      updateParseButtonState();
+      globalThis.clearButton.disabled = false;
+      globalThis.invoiceInput.disabled = false;
+    }
+  });
 
-globalThis.clearButton.addEventListener("click", (e) => {
-  clearTable();
-  globalThis.exportButton.disabled = true;
-  globalThis.invoiceInput.value = null;
-  globalThis.invoiceInput.dispatchEvent(new Event("change"));
+  globalThis.exportButton.addEventListener("click", (e) => {
+    try {
+      e.target.disabled = true;
+      globalThis.invoiceInput.disabled = true;
+      globalThis.parseButton.disabled = true;
+      globalThis.clearButton.disabled = true;
+      updateProgressText("正在导出...");
+      exportInvoiceXLSX();
+    } finally {
+      updateProgressText("导出完成！");
+      e.target.disabled = false;
+      globalThis.parseButton.disabled = false;
+      globalThis.clearButton.disabled = false;
+      globalThis.invoiceInput.disabled = false;
+    }
+  });
+
+  globalThis.clearButton.addEventListener("click", (e) => {
+    clearTable();
+    globalThis.exportButton.disabled = true;
+    globalThis.invoiceInput.value = null;
+    globalThis.invoiceInput.dispatchEvent(new Event("change"));
+  });
 });
