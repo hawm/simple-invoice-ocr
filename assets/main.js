@@ -24,11 +24,17 @@ async function parseInvoiceQRcodeData(canvas) {
 }
 
 async function parseInvoiceTextData(canvas) {
-  const AMOUNT_REGEX = /[\(（]\s?小\s?写\s?[\)）]\s?\D\s?(\d+(\.\d{2})?)/;
+  const AMOUNT_REGEX = /价\s*税\s*合\s*计.*?\D(\d+(?:\.\d{2})?)\n$/;
   let res = await globalThis.ocrWorker.recognize(canvas);
-  let text = res.data.text;
-  console.debug(text);
-  let amount = AMOUNT_REGEX.exec(text)[1];
+  let lines = res.data.lines;
+  let amount = null;
+  lines.forEach((line) => {
+    console.debug(line);
+    let regRes = AMOUNT_REGEX.exec(line.text);
+    if (regRes) {
+      amount = regRes[1];
+    }
+  });
   return {
     amount,
   };
