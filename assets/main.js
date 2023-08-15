@@ -10,8 +10,8 @@ async function init() {
   globalThis.exportButton.disabled = true;
   globalThis.clearButton = document.getElementById("clear-btn");
   globalThis.ocrWorker = await Tesseract.createWorker({
-    langPath: "./vendor/tessdata",
-    //logger: (m) => console.log(m),
+    langPath: "https://cdn.jsdelivr.net/gh/naptha/tessdata@gh-pages/4.0.0/",
+    logger: (m) => console.log(m),
   });
   await ocrWorker.loadLanguage("chi_sim");
   await ocrWorker.initialize("chi_sim");
