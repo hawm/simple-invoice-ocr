@@ -56,6 +56,7 @@
         globalThis.exportButton = document.getElementById("export-btn");
         globalThis.exportButton.disabled = true;
         globalThis.clearButton = document.getElementById("clear-btn");
+        globalThis.clearButton.disabled = true;
         globalThis.ocrWorker = await Tesseract.createWorker({
           langPath:
             "https://cdn.jsdelivr.net/gh/naptha/tessdata@gh-pages/4.0.0/",
@@ -65,6 +66,7 @@
         await ocrWorker.initialize("chi_sim");
         updateProgressText("初始化完成！");
         globalThis.invoiceInput.disabled = false;
+        globalThis.clearButton.disabled = false;
       }
 
       async function parseInvoiceQRcodeData(canvas) {
