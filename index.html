@@ -45,97 +45,123 @@
       <table id="invoice-table"></table>
     </div>
     <script>
-      async function init() {
-        globalThis.progressText = document.getElementById("progress-text");
-        updateProgressText("初始化中...");
-        globalThis.invoiceInput = document.getElementById("invoice-input");
-        globalThis.invoiceInput.disabled = true;
-        globalThis.invoiceTable = document.getElementById("invoice-table");
-        globalThis.parseButton = document.getElementById("parse-btn");
-        globalThis.parseButton.disabled = true;
-        globalThis.exportButton = document.getElementById("export-btn");
-        globalThis.exportButton.disabled = true;
-        globalThis.clearButton = document.getElementById("clear-btn");
-        globalThis.clearButton.disabled = true;
+      async function initTesseract() {
         globalThis.ocrWorker = await Tesseract.createWorker({
           langPath:
             "https://cdn.jsdelivr.net/gh/naptha/tessdata@gh-pages/4.0.0/",
-          logger: (m) => console.log(m),
+          //logger: (m) => console.log(m),
         });
         await ocrWorker.loadLanguage("chi_sim");
         await ocrWorker.initialize("chi_sim");
+      }
+      async function init() {
+        console.debug("Initializing...");
+        globalThis.progressText = document.getElementById("progress-text");
+        updateProgressText("初始化中...");
+        globalThis.invoiceInput = document.getElementById("invoice-input");
+        globalThis.invoiceTable = document.getElementById("invoice-table");
+        globalThis.parseButton = document.getElementById("parse-btn");
+        globalThis.exportButton = document.getElementById("export-btn");
+        globalThis.clearButton = document.getElementById("clear-btn");
+        globalThis.clearButton.disabled = true;
+        globalThis.invoiceInput.disabled = true;
+        globalThis.parseButton.disabled = true;
+        globalThis.exportButton.disabled = true;
+
+        await initTesseract();
+
         updateProgressText("初始化完成！");
         globalThis.invoiceInput.disabled = false;
         globalThis.clearButton.disabled = false;
+        console.debug("Initialized");
       }
 
-      async function parseInvoiceQRcodeData(canvas) {
-        let ctx = canvas.getContext("2d");
-        let imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-        let code = jsQR(imgData.data, canvas.width, canvas.height);
-        console.debug(code);
-        return code.data.split(",");
+      function parseInvoiceQRcodeData(canvas) {
+        const data = {};
+        try {
+          let ctx = canvas.getContext("2d");
+          let imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+          let code = jsQR(imgData.data, canvas.width, canvas.height);
+          console.debug("Parsed QR code data: ", code);
+          let arrayData = (data.codeData = code.data.split(","));
+          data.code = arrayData[2];
+          data.num = arrayData[3];
+          data.amount = arrayData[4];
+          data.date = arrayData[5];
+          data.check = arrayData[6];
+          return data;
+        } catch (e) {
+          throw new Error("二维码识别失败");
+        }
       }
 
       async function parseInvoiceTextData(canvas) {
         const AMOUNT_REGEX = /价\s*税\s*合\s*计.*?\D(\d+(?:\.\d{2})?)\n$/;
-        let res = await globalThis.ocrWorker.recognize(canvas);
-        let lines = res.data.lines;
-        let amount = null;
-        lines.forEach((line) => {
-          console.debug(line);
-          let regRes = AMOUNT_REGEX.exec(line.text);
-          if (regRes) {
-            amount = regRes[1];
+        const data = {};
+        try {
+          const res = await globalThis.ocrWorker.recognize(canvas);
+          console.debug("Parsed text data: ", res);
+          const lines = res.data.lines;
+          // search lines in reverse order
+          for (let i = lines.length - 1; i >= 0; i--) {
+            const regRes = AMOUNT_REGEX.exec(lines[i].text);
+            if (regRes) {
+              data.amount = regRes[1];
+              break;
+            }
           }
-        });
-        return {
-          amount,
-        };
+          return data;
+        } catch (e) {
+          throw new Error("文本识别失败");
+        }
       }
 
       async function parseImageInvoiceData(file) {
-        let qrCodeData = [],
-          textData = {},
-          msg = "";
+        const data = {
+          qrCodeData: [],
+          textData: {},
+          status: 0,
+          msg: null,
+        };
         try {
-          let img = await loadImage(file, { canvas: true });
-          let canvas = img.image;
-          qrCodeData = await parseInvoiceQRcodeData(canvas);
-          textData = await parseInvoiceTextData(canvas);
+          const img = await loadImage(file, { canvas: true });
+          const canvas = img.image;
+          data.qrCodeData = parseInvoiceQRcodeData(canvas);
+          data.textData = await parseInvoiceTextData(canvas);
+          data.status = 1;
         } catch (e) {
-          console.debug(e);
-          msg = "识别失败";
+          console.error(e);
+          data.msg = e.message;
         } finally {
-          return {
-            qrCodeData,
-            textData,
-            msg,
-          };
+          return data;
         }
       }
 
       async function parseInvoiceData(file) {
-        const { qrCodeData, textData, msg } = await parseImageInvoiceData(file);
+        const { qrCodeData, textData, status, msg } =
+          await parseImageInvoiceData(file);
         return {
-          code: qrCodeData[2],
-          num: qrCodeData[3],
-          date: qrCodeData[5],
+          code: qrCodeData.code,
+          num: qrCodeData.num,
+          date: qrCodeData.date,
           amount: textData.amount,
-          msg,
+          status: status,
+          msg: msg,
         };
       }
 
       async function renderTableRowData(rowData) {
         const tr = document.createElement("tr");
         const header = globalThis.invoiceTable.rows[0];
+        console.debug(`Rendering table row`, rowData);
         Array.from(header.children).forEach((th) => {
+          let name = th.getAttribute("data-name");
           let id = th.getAttribute("data-id");
           let type = th.getAttribute("data-type");
           let value = th.getAttribute("data-value") || rowData[id];
           let format = th.getAttribute("data-format");
-
           let td = document.createElement("td");
+          console.debug("Rendering table row column:", name, value);
           type ? td.setAttribute("data-t", type) : null;
           format ? td.setAttribute("data-f", format) : null;
           td.textContent = value;
@@ -187,6 +213,13 @@
             format: null,
           },
           {
+            name: "状态",
+            id: "status",
+            type: "b",
+            value: null,
+            format: null,
+          },
+          {
             name: "备注",
             id: "msg",
             type: "s",
@@ -196,12 +229,13 @@
         ];
         headerData = headerData || defaultHeaderData;
         clearTable();
+        console.debug("Rendering table header");
         const thead = document.createElement("thead");
         const tr = document.createElement("tr");
         headerData.forEach((h, i) => {
+          console.debug("Rendering table header column:", h.name);
           let th = document.createElement("th");
           Object.entries(h).forEach(([k, v]) => {
-            console.log(k);
             v ? th.setAttribute(`data-${k}`, v) : null;
           });
           th.textContent = h.name;
@@ -216,6 +250,7 @@
       }
 
       async function parse() {
+        console.debug("Parsing...");
         const invoiceFiles = globalThis.invoiceInput.files;
 
         renderTableHeader();
@@ -227,27 +262,32 @@
               invoiceFiles.length - (i + 1)
             }个`
           );
-          console.log(`Parsing ${f.name}`);
+          console.debug(`Parsing ${f.name}`);
           let data = await parseInvoiceData(f);
           data["order"] = i + 1;
           data["file"] = f.name;
           renderTableRowData(data);
         }
         updateProgressText(`识别完成！共${invoiceFiles.length}个图片`);
-        console.log("All done!");
+        console.debug("Parsed!");
       }
 
       function exportInvoiceXLSX() {
-        let worksheet = XLSX.utils.table_to_book(
-          document.getElementById("invoice-table")
-        );
+        updateProgressText("正在导出...");
         time = new Date()
           .toISOString()
           .split(".")[0]
           .replaceAll("-", "")
           .replaceAll(":", "")
           .replace("T", "_");
+        fileName = `invoice_${time}.xlsx`;
+        console.debug("Exporting to XLSX", fileName);
+        let worksheet = XLSX.utils.table_to_book(
+          document.getElementById("invoice-table")
+        );
         XLSX.writeFile(worksheet, `invoice_${time}.xlsx`);
+        updateProgressText(`已导出Excel文件：${fileName}`);
+        console.debug("Exported!");
       }
 
       function updateParseButtonState() {
@@ -289,10 +329,8 @@
             globalThis.invoiceInput.disabled = true;
             globalThis.parseButton.disabled = true;
             globalThis.clearButton.disabled = true;
-            updateProgressText("正在导出...");
             exportInvoiceXLSX();
           } finally {
-            updateProgressText("导出完成！");
             e.target.disabled = false;
             globalThis.parseButton.disabled = false;
             globalThis.clearButton.disabled = false;
