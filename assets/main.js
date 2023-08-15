@@ -138,14 +138,14 @@ globalThis.invoiceInput.addEventListener("change", (e) => {
 globalThis.parseButton.addEventListener("click", async (e) => {
   try {
     e.target.disabled = true;
-    e.target.textContent = "Parsing...";
+    e.target.textContent = "识别中...";
     globalThis.invoiceInput.disabled = true;
     globalThis.clearButton.disabled = true;
     globalThis.exportButton.disabled = true;
     await parse();
     globalThis.exportButton.disabled = false;
   } finally {
-    e.target.textContent = "Parse";
+    e.target.textContent = "识别";
     updateParseButtonState();
     globalThis.clearButton.disabled = false;
     globalThis.invoiceInput.disabled = false;
