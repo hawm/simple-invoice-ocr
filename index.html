@@ -128,10 +128,15 @@
         const tr = document.createElement("tr");
         const header = globalThis.invoiceTable.rows[0];
         Array.from(header.children).forEach((th) => {
-          let prop = th.getAttribute("itemprop");
-          field = rowData[prop];
+          let id = th.getAttribute("data-id");
+          let type = th.getAttribute("data-type");
+          let value = th.getAttribute("data-value") || rowData[id];
+          let format = th.getAttribute("data-format");
+
           let td = document.createElement("td");
-          td.textContent = field;
+          type ? td.setAttribute("data-t", type) : null;
+          format ? td.setAttribute("data-f", format) : null;
+          td.textContent = value;
           tr.appendChild(td);
         });
 
@@ -143,15 +148,61 @@
       }
 
       async function renderTableHeader(headerData) {
-        // headerData should be an two dimensional array
-        // [[name, itemprop], ...]
+        const defaultHeaderData = [
+          {
+            name: "发票代码",
+            id: "code",
+            type: "s",
+            value: null,
+            format: null,
+          },
+          {
+            name: "发票号码",
+            id: "num",
+            type: "s",
+            value: null,
+            format: null,
+          },
+          {
+            name: "开票日期",
+            id: "date",
+            type: "d",
+            value: null,
+            format: "yyyymmdd",
+          },
+          {
+            name: "价税合计",
+            id: "amount",
+            type: "n",
+            value: null,
+            format: "#,##0.00",
+          },
+          {
+            name: "文件名",
+            id: "file",
+            type: "s",
+            value: null,
+            format: null,
+          },
+          {
+            name: "备注",
+            id: "msg",
+            type: "s",
+            value: null,
+            format: null,
+          },
+        ];
+        headerData = headerData || defaultHeaderData;
         clearTable();
-        let thead = document.createElement("thead");
-        let tr = document.createElement("tr");
-        headerData.forEach((field) => {
+        const thead = document.createElement("thead");
+        const tr = document.createElement("tr");
+        headerData.forEach((h, i) => {
           let th = document.createElement("th");
-          th.setAttribute("itemprop", field[1]);
-          th.textContent = field[0];
+          Object.entries(h).forEach(([k, v]) => {
+            console.log(k);
+            v ? th.setAttribute(`data-${k}`, v) : null;
+          });
+          th.textContent = h.name;
           tr.appendChild(th);
         });
         thead.appendChild(tr);
@@ -165,14 +216,7 @@
       async function parse() {
         const invoiceFiles = globalThis.invoiceInput.files;
 
-        renderTableHeader([
-          ["发票代码", "code"],
-          ["发票号码", "num"],
-          ["开票日期", "date"],
-          ["价税合计", "amount"],
-          ["文件名", "file"],
-          ["备注", "msg"],
-        ]);
+        renderTableHeader();
 
         for (let i = 0; i < invoiceFiles.length; i++) {
           let f = invoiceFiles[i];
