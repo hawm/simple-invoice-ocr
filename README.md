@@ -2,6 +2,8 @@
 
 https://hawm.github.io/simple-invoice-ocr/
 
+![](./show.png)
+
 ## CREDIT
 
 - https://github.com/cozmo/jsQR
