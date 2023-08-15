@@ -2,6 +2,9 @@
 
 https://hawm.github.io/simple-invoice-ocr/
 
-## Tesseract 中文模型
+## CREDIT
 
-https://github.com/gumblex/tessdata_chi
+- https://github.com/cozmo/jsQR
+- https://github.com/blueimp/JavaScript-Load-Image
+- https://github.com/naptha/tesseract.js
+- https://github.com/SheetJS/sheetjs
