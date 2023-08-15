@@ -163,7 +163,7 @@
           let td = document.createElement("td");
           console.debug("Rendering table row column:", name, value);
           type ? td.setAttribute("data-t", type) : null;
-          format ? td.setAttribute("data-f", format) : null;
+          format ? td.setAttribute("data-z", format) : null;
           td.textContent = value;
           tr.appendChild(td);
         });
@@ -194,16 +194,16 @@
           {
             name: "开票日期",
             id: "date",
-            type: "d",
+            type: "s",
             value: null,
-            format: "yyyymmdd",
+            format: null,
           },
           {
             name: "价税合计",
             id: "amount",
             type: "n",
             value: null,
-            format: "#,##0.00",
+            format: null,
           },
           {
             name: "文件名",
@@ -215,7 +215,7 @@
           {
             name: "状态",
             id: "status",
-            type: "b",
+            type: "s",
             value: null,
             format: null,
           },
