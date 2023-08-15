@@ -19,6 +19,7 @@ async function parseInvoiceQRcodeData(canvas) {
   let ctx = canvas.getContext("2d");
   let imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
   let code = jsQR(imgData.data, canvas.width, canvas.height);
+  console.debug(code);
   return code.data.split(",");
 }
 
@@ -26,31 +27,42 @@ async function parseInvoiceTextData(canvas) {
   const AMOUNT_REGEX = /[\(（]\s?小\s?写\s?[\)）]\s?\D\s?(\d+(\.\d{2})?)/;
   let res = await globalThis.ocrWorker.recognize(canvas);
   let text = res.data.text;
+  console.debug(text);
   let amount = AMOUNT_REGEX.exec(text)[1];
-
   return {
     amount,
   };
 }
 
 async function parseImageInvoiceData(file) {
-  let img = await loadImage(file, { canvas: true });
-  let canvas = img.image;
-  let qrCodeData = await parseInvoiceQRcodeData(canvas);
-  let textData = await parseInvoiceTextData(canvas);
-  return {
-    qrCodeData,
-    textData,
-  };
+  let qrCodeData = [],
+    textData = {},
+    msg = "";
+  try {
+    let img = await loadImage(file, { canvas: true });
+    let canvas = img.image;
+    qrCodeData = await parseInvoiceQRcodeData(canvas);
+    textData = await parseInvoiceTextData(canvas);
+  } catch (e) {
+    console.debug(e);
+    msg = "识别失败";
+  } finally {
+    return {
+      qrCodeData,
+      textData,
+      msg,
+    };
+  }
 }
 
 async function parseInvoiceData(file) {
-  const { qrCodeData, textData } = await parseImageInvoiceData(file);
+  const { qrCodeData, textData, msg } = await parseImageInvoiceData(file);
   return {
     code: qrCodeData[2],
     num: qrCodeData[3],
     date: qrCodeData[5],
     amount: textData.amount,
+    msg,
   };
 }
 
@@ -98,15 +110,16 @@ async function parse() {
   renderTableHeader([
     ["发票代码", "code"],
     ["发票号码", "num"],
-    ["开盘日期", "date"],
+    ["开票日期", "date"],
     ["价税合计", "amount"],
     ["文件名", "file"],
+    ["信息", "msg"],
   ]);
 
   for (let i = 0; i < invoiceFiles.length; i++) {
     let f = invoiceFiles[i];
     updateProgressText(
-      `正在识别第${i + 1}张发票...， 还剩下${invoiceFiles.length - (i + 1)}张`
+      `正在识别第${i + 1}个图片...， 还剩下${invoiceFiles.length - (i + 1)}个`
     );
     console.log(`Parsing ${f.name}`);
     let data = await parseInvoiceData(f);
@@ -114,7 +127,7 @@ async function parse() {
     data["file"] = f.name;
     renderTableRowData(data);
   }
-  updateProgressText(`识别完成！共识别${invoiceFiles.length}张发票`);
+  updateProgressText(`识别完成！共${invoiceFiles.length}个图片`);
   console.log("All done!");
 }
 
