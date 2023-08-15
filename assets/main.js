@@ -119,7 +119,7 @@ async function parse() {
     ["开票日期", "date"],
     ["价税合计", "amount"],
     ["文件名", "file"],
-    ["信息", "msg"],
+    ["备注", "msg"],
   ]);
 
   for (let i = 0; i < invoiceFiles.length; i++) {
