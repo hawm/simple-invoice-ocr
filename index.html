@@ -118,6 +118,7 @@
       }
 
       async function parseInvoiceTextData(canvas) {
+        // TODO: support multi-regexp to capitable with accuracy problem of OCR
         const AMOUNT_REGEX = /价\s*税\s*合\s*计.*?\D(\d+(?:\.\d{2})?)\n$/;
         const data = {};
         try {
@@ -151,6 +152,7 @@
           const canvas = img.image;
           data.qrCodeData = parseInvoiceQRcodeData(canvas);
           data.textData = await parseInvoiceTextData(canvas);
+          // TODO: compare qrCodeData and textData to improve accuracy
           data.status = 1;
         } catch (e) {
           console.error(e);
