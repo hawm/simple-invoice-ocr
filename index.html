@@ -37,10 +37,12 @@
       id="invoice-input"
       accept="image/png, image/jpeg"
       multiple
+      title="选择需要识别的发票图片"
     />
-    <button id="parse-btn">识别</button>
-    <button id="export-btn">导出Excel</button>
-    <button id="clear-btn">清除</button>
+    <button id="parse-btn" title="开始识别所有图片">识别</button>
+    <button id="export-btn" title="导出Excel的XLXS文件">导出Excel</button>
+    <button id="clear-btn" title="清除已经识别的数据">清除</button>
+    <button id="reset-btn" title="重启应用">重置</button>
     <p id="progress-text"></p>
     <div id="invoice-table-container">
       <table id="invoice-table"></table>
@@ -55,6 +57,7 @@
         await ocrWorker.loadLanguage("chi_sim");
         await ocrWorker.initialize("chi_sim");
       }
+
       async function init() {
         console.debug("Initializing...");
         globalThis.progressText = document.getElementById("progress-text");
@@ -64,6 +67,8 @@
         globalThis.parseButton = document.getElementById("parse-btn");
         globalThis.exportButton = document.getElementById("export-btn");
         globalThis.clearButton = document.getElementById("clear-btn");
+        globalThis.resetButton = document.getElementById("reset-btn");
+        globalThis.resetButton.disabled = true;
         globalThis.clearButton.disabled = true;
         globalThis.invoiceInput.disabled = true;
         globalThis.parseButton.disabled = true;
@@ -74,7 +79,22 @@
         updateProgressText("初始化完成！");
         globalThis.invoiceInput.disabled = false;
         globalThis.clearButton.disabled = false;
+        globalThis.resetButton.disabled = false;
         console.debug("Initialized");
+      }
+
+      async function reset() {
+        // https://github.com/naptha/tesseract.js/blob/master/docs/faq.md#how-does-tesseractjs-download-and-keep-traineddata
+        const store = "keyval-store";
+        await globalThis.ocrWorker.terminate();
+        const del = window.indexedDB.deleteDatabase(store);
+        del.onerror = (e) => {
+          alert("重置失败");
+        };
+        del.onsuccess = (e) => {
+          alert("重置成功，即将刷新页面");
+          location.reload();
+        };
       }
 
       function parseInvoiceQRcodeData(canvas) {
@@ -346,6 +366,10 @@
           globalThis.exportButton.disabled = true;
           globalThis.invoiceInput.value = null;
           globalThis.invoiceInput.dispatchEvent(new Event("change"));
+        });
+
+        globalThis.resetButton.addEventListener("click", async (e) => {
+          await reset();
         });
       });
     </script>
