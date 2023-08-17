@@ -84,7 +84,7 @@
           let imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
           let code = jsQR(imgData.data, canvas.width, canvas.height);
           console.debug("Parsed QR code data: ", code);
-          let arrayData = (data.codeData = code.data.split(","));
+          let arrayData = code.data.split(",");
           data.code = arrayData[2];
           data.num = arrayData[3];
           data.amount = arrayData[4];
